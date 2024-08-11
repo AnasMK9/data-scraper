@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: docker/postgres/Dockerfile
+    container_name: job_scraper_db
+    environment:
+      POSTGRES_USER: scraper_user
+      POSTGRES_PASSWORD: scraper_pass
+      POSTGRES_DB: job_scraper
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  django:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: django_app
+    environment:
+      - DATABASE_URL=postgres://scraper_user:scraper_pass@postgres:5432/job_scraper
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+
+  scraper:
+    build:
+      context: .
+      dockerfile: docker/scraper/Dockerfile
+    container_name: job_scraper
+    environment:
+      - DATABASE_URL=postgres://scraper_user:scraper_pass@postgres:5432/job_scraper
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
