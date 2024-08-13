@@ -12,8 +12,8 @@ COPY requirements.txt .
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire scraper directory into the container
-COPY ../../scraper /app/
+# Copy the entire notebooks directory into the container
+COPY ../../notebooks /app/
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
