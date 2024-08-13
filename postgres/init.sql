@@ -1,7 +1,19 @@
-CREATE DATABASE IF NOT EXISTS job_scraper;
+-- init.sql
 
-\c job_scraper;
+-- Create the database if it does not exist
+DO
+$$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'job_scraper') THEN
+        CREATE DATABASE job_scraper;
+    END IF;
+END
+$$;
 
+-- Connect to the newly created or existing database
+\c job_scraper
+
+-- Create the table if it does not exist
 CREATE TABLE IF NOT EXISTS job_listings (
     id SERIAL PRIMARY KEY,
     job_title VARCHAR(255) NOT NULL,
