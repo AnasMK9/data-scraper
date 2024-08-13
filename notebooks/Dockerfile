@@ -13,7 +13,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire notebooks directory into the container
-COPY ../../notebooks /app/
+COPY . /app/
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1

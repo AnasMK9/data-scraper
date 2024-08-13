@@ -9,24 +9,36 @@ services:
       POSTGRES_DB: job_scraper
     ports:
       - "5432:5432"
+    networks:
+      - scraper_network
 
-  django:
-    build: ./django
-    command: gunicorn scraperwebapp.wsgi:application --bind 0.0.0.0:8000
+  scraperwebapp:
+    build:
+      context: ./scraperwebapp
     volumes:
-      - ./django:/app
+      - ./scraperwebapp:/app
     depends_on:
       - postgres
     ports:
       - "8000:8000"
     env_file:
-      - ./django/.env
+      - ./scraperwebapp/.env
+    networks:
+      - scraper_network
 
   notebook:
-    build: ./notebooks
+    build: 
+      context: ./notebooks
     ports:
       - "8888:8888"
     depends_on:
       - postgres
     env_file:
       - ./notebooks/.env
+    networks:
+      - scraper_network
+  
+networks:
+  scraper_network:
+    driver: bridge
+
