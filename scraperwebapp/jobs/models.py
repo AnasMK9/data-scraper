@@ -1,6 +1,5 @@
-from django.db import models
+from django.contrib.auth.models import User
 
-# Create your models here.
 from django.db import models
 
 class JobListing(models.Model):
@@ -19,7 +18,9 @@ class JobListing(models.Model):
     def __str__(self):
         return f"{self.job_title} at {self.company_name}"
 
+
 class Keyword(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="keywords")
     keyword = models.CharField(max_length=255)
     scheduled_on = models.DateTimeField(auto_now_add=True)
 
