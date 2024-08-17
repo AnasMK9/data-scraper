@@ -26,18 +26,18 @@ services:
     networks:
       - scraper_network
 
-  notebook:
-    build: 
-      context: ./notebooks
-    ports:
-      - "8888:8888"
-    depends_on:
-      - postgres
-    env_file:
-      - ./notebooks/.env
-    networks:
-      - scraper_network
-    command: jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+  # notebook:
+  #   build: 
+  #     context: ./notebooks
+  #   ports:
+  #     - "8888:8888"
+  #   depends_on:
+  #     - postgres
+  #   env_file:
+  #     - ./notebooks/.env
+  #   networks:
+  #     - scraper_network
+  #   command: jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 
   
 networks:
