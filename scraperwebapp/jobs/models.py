@@ -20,9 +20,11 @@ class JobListing(models.Model):
 
 
 class Keyword(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="keywords")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     keyword = models.CharField(max_length=255)
     scheduled_on = models.DateTimeField(auto_now_add=True)
+    job_listings = models.ManyToManyField('JobListing', related_name='keywords', blank=True)
 
     def __str__(self):
         return self.keyword
+    

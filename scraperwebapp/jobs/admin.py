@@ -6,11 +6,13 @@ from django.contrib.auth.models import User
 class JobListingAdmin(admin.ModelAdmin):
     list_display = ('job_title', 'company_name', 'location', 'rating')
     search_fields = ('job_title', 'company_name', 'location')
+    raw_id_fields = ('keywords',)
 
 @admin.register(Keyword)
 class KeywordAdmin(admin.ModelAdmin):
     list_display = ('keyword', 'user', 'scheduled_on')
     search_fields = ('keyword', 'user__username')
+    raw_id_fields = ('user', 'job_listings')
 
 
 class KeywordInline(admin.TabularInline):
