@@ -15,14 +15,14 @@ class KeywordAdmin(admin.ModelAdmin):
     raw_id_fields = ('user', 'job_listings')
 
 
-class KeywordInline(admin.TabularInline):
-    model = Keyword
-    extra = 1
+# class KeywordInline(admin.TabularInline):
+#     model = Keyword
+#     extra = 1
 
 
-class UserAdmin(admin.ModelAdmin):
-    inlines = [KeywordInline]
+# class UserAdmin(admin.ModelAdmin):
+#     inlines = [KeywordInline]
 
 
-admin.site.unregister(User)
-admin.site.register(User, UserAdmin)
+# admin.site.unregister(User)
+# admin.site.register(User, UserAdmin)
