@@ -62,12 +62,14 @@ To manage the application, you need to create a Django admin user. Run the follo
 ```bash
 docker-compose exec -it scraperwebapp python manage.py createsuperuser
 ```
+visit localhost:8000/admin and login with the superuser credentials you just created and you should be able to see the keywords and job listings in the database
 
 ## Using Celery for Background Tasks
 Celery is used to run background scraping tasks. It is configured and automatically started with Docker Compose.
 
 ## Running a Task
 Tasks are automatically queued when new keywords are added. The Celery worker will pick up the tasks and execute them.
+
 
 ## Setting Up Environment Variables
 The application requires several environment variables to be set up. You can find .env.example files in each directory.
