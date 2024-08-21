@@ -10,19 +10,21 @@ class JobListingAdmin(admin.ModelAdmin):
 
 @admin.register(Keyword)
 class KeywordAdmin(admin.ModelAdmin):
-    list_display = ('keyword', 'user', 'scheduled_on')
-    search_fields = ('keyword', 'user__username')
+    list_display = ('keyword', 'scheduled_on')
+    search_fields = ('keyword', 'job_listings__title')
     raw_id_fields = ('job_listings',)
 
     def get_readonly_fields(self, request, obj=None):
-        if obj:  # editing an existing object
+        # Make 'job_listings' readonly when editing an existing object
+        if obj:  
             return ['user', 'job_listings']
-        return []
+        return ['user']
 
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
         if obj:
-            fields = ['keyword', 'scheduled_on']
+            # Customize fields for the object detail view
+            fields = ['keyword', 'scheduled_on', 'job_listings']
         return fields
 
     def save_model(self, request, obj, form, change):
@@ -32,6 +34,22 @@ class KeywordAdmin(admin.ModelAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        if not obj:
-            form.base_fields['user'].initial = request.user
+
+      
         return form
+
+    def get_queryset(self, request):
+        # Customize the queryset to filter by the current user if needed
+        qs = super().get_queryset(request)
+        return qs.filter(user=request.user)
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "job_listings":
+            kwargs["queryset"] = JobListing.objects.filter(keywords__user=request.user)
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def job_listings(self, obj):
+        # Custom method to display related job listings in the details view
+        return ", ".join([listing.title for listing in obj.job_listings.all()])
+
+    job_listings.short_description = 'Related Job Listings'

@@ -9,6 +9,8 @@ import pandas as pd
 from selenium.webdriver.chrome.options import Options
 import urllib
 from jobs.models import JobListing, Keyword
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 def get_jobs(keyword, num_jobs=20, verbose=True):
@@ -32,70 +34,65 @@ def get_jobs(keyword, num_jobs=20, verbose=True):
     driver.get(url)
     jobs = []
 
-    while len(jobs) < num_jobs:
-        time.sleep(3)  # Wait for the page to load
-
-        # Try different strategies to locate job cards
-        job_cards = driver.find_elements(By.XPATH, "//div[contains(@class, 'jobCard') or contains(@class, 'JobCard')]")
-
-        for card in job_cards:
-            try:
-                # Job title
-                job_title = card.find_element(By.XPATH, ".//a[contains(@class, 'jobTitle') or contains(@class, 'JobCard_jobTitle')]").text
-
-                # Company name
-                try:
-                    company_name = card.find_element(By.XPATH, ".//div[contains(@class, 'Employer') or contains(@class, 'company')]").text
-                except NoSuchElementException:
-                    company_name = "Unknown"
-
-                # Location
-                try:
-                    location = card.find_element(By.XPATH, ".//div[contains(@class, 'location') or contains(@class, 'JobCard_location')]").text
-                except NoSuchElementException:
-                    location = "Unknown"
-
-                # Job description snippet
-                try:
-                    job_description = card.find_element(By.XPATH, ".//div[contains(@class, 'jobDescriptionSnippet') or contains(@class, 'JobCard_jobDescriptionSnippet')]").text
-                except NoSuchElementException:
-                    job_description = "No description available"
-
-                # Date posted (listing age)
-                try:
-                    listing_age = card.find_element(By.XPATH, ".//div[contains(@class, 'listingAge') or contains(@class, 'JobCard_listingAge')]").text
-                except NoSuchElementException:
-                    listing_age = "Not specified"
-
-                # Easy apply (if present)
-                try:
-                    easy_apply = card.find_element(By.XPATH, ".//span[contains(@class, 'easyApply') or contains(@class, 'JobCard_easyApply')]").text
-                except NoSuchElementException:
-                    easy_apply = "No"
-
-                jobs.append({
-                    "title": job_title,
-                    "company": company_name,
-                    "location": location,
-                    "description": job_description,
-                    "age": listing_age,
-                    "easy_apply": easy_apply
-                })
-
-                if len(jobs) >= num_jobs:
-                    break
-
-            except NoSuchElementException as e:
-                print(f"Element not found: {e}")
-                continue
+    wait = WebDriverWait(driver, 10)  # 10 seconds wait
+    while len(jobs) < num_jobs:  # If true, should be still looking for new jobs.
+        try:
+            driver.find_element(By.CLASS_NAME, "selected").click()
+        except:
+            pass
 
         try:
-            # Click on the "Next" button to load more jobs
-            next_button = driver.find_element(By.XPATH, "//button[contains(@class, 'PaginationFooter_nextButton') or contains(@class, 'nextButton')]")
-            driver.execute_script("arguments[0].click();", next_button)
-        except NoSuchElementException:
-            print("No more pages available.")
-            break
+            driver.find_element(By.CLASS_NAME, "ModalStyle__xBtn___29PT9").click()  # Close the sign-up modal
+        except:
+            pass
+
+        # Going through each job in this page
+        job_cards = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "jobCard")))
+
+        
+        for job_card in job_cards:  
+            print(f"Progress: {len(jobs)}/{num_jobs}")
+            if len(jobs) >= num_jobs:
+                break
+
+            try:
+                job_title = job_card.find_element(By.CLASS_NAME, "JobCard_jobTitle___7I6y").text
+                company_name = job_card.find_element(By.CLASS_NAME, "EmployerProfile_compactEmployerName__LE242").text
+                location = job_card.find_element(By.CLASS_NAME, "JobCard_location__rCz3x").text
+                job_description = job_card.find_element(By.CLASS_NAME, "JobCard_jobDescriptionSnippet__yWW8q").text
+            except Exception as e:
+                print(f"Failed to collect job data: {e}")
+                continue
+
+            try:
+                salary_estimate = job_card.find_element(By.CLASS_NAME, "JobCard_salaryEstimate__arV5J").text
+            except NoSuchElementException:
+                salary_estimate = -1
+
+            try:
+                rating = job_card.find_element(By.CLASS_NAME, "EmployerProfile_ratingContainer__ul0Ef").text
+            except NoSuchElementException:
+                rating = -1
+
+            # Printing for debugging
+            if verbose:
+                print(f"Job Title: {job_title}")
+                print(f"Salary Estimate: {salary_estimate}")
+                print(f"Job Description: {job_description[:500]}")
+                print(f"Rating: {rating}")
+                print(f"Company Name: {company_name}")
+                print(f"Location: {location}")
+
+            jobs.append({
+                "Job Title": job_title,
+                "Salary Estimate": salary_estimate,
+                "Job Description": job_description,
+                "Rating": rating,
+                "Company Name": company_name,
+                "Location": location
+            })
+
+    print(f"Finished scraping {len(jobs)} jobs")
 
     driver.quit()
 
