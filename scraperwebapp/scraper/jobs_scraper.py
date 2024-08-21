@@ -10,7 +10,8 @@ from selenium.webdriver.chrome.options import Options
 import urllib
 from jobs.models import JobListing, Keyword
 
-def get_jobs(keyword, num_jobs, verbose):
+
+def get_jobs(keyword, num_jobs=20, verbose=True):
     '''Gathers jobs as a dataframe, scraped from Glassdoor'''
 
     # Initializing the webdriver
@@ -25,82 +26,83 @@ def get_jobs(keyword, num_jobs, verbose):
 
     driver.set_window_size(1920, 1080)
 
-    print (urllib.parse.urlencode(keyword));
     print(keyword)
     url = f'https://www.glassdoor.com/Job/jobs.htm?={urllib.parse.urlencode({"sc.keyword":keyword})}&sc.locationSeoString=Riyadh+%28Saudi+Arabia%29&locId=3110290&locT=C'
     print(url)
     driver.get(url)
     jobs = []
 
-    while len(jobs) < num_jobs:  # If true, should be still looking for new jobs.
+    while len(jobs) < num_jobs:
+        time.sleep(3)  # Wait for the page to load
 
-        time.sleep(1)  # Let the page load
+        # Try different strategies to locate job cards
+        job_cards = driver.find_elements(By.XPATH, "//div[contains(@class, 'jobCard') or contains(@class, 'JobCard')]")
 
-        # Test for the "Sign Up" prompt and get rid of it.
-        try:
-            driver.find_element(By.CLASS_NAME, "selected").click()
-        except:
-            pass
-
-        try:
-            driver.find_element(By.CLASS_NAME, "ModalStyle__xBtn___29PT9").click()  # Close the sign-up modal
-        except:
-            pass
-
-        # Going through each job in this page
-        job_cards = driver.find_elements(By.CLASS_NAME, "jobCard")  # Updated to match the current HTML structure
-        
-        for job_card in job_cards:  
-            print(f"Progress: {len(jobs)}/{num_jobs}")
-            if len(jobs) >= num_jobs:
-                break
-
+        for card in job_cards:
             try:
-                job_title = job_card.find_element(By.CLASS_NAME, "JobCard_jobTitle___7I6y").text
-                company_name = job_card.find_element(By.CLASS_NAME, "EmployerProfile_compactEmployerName__LE242").text
-                location = job_card.find_element(By.CLASS_NAME, "JobCard_location__rCz3x").text
-                job_description = job_card.find_element(By.CLASS_NAME, "JobCard_jobDescriptionSnippet__yWW8q").text
-            except Exception as e:
-                print(f"Failed to collect job data: {e}")
+                # Job title
+                job_title = card.find_element(By.XPATH, ".//a[contains(@class, 'jobTitle') or contains(@class, 'JobCard_jobTitle')]").text
+
+                # Company name
+                try:
+                    company_name = card.find_element(By.XPATH, ".//div[contains(@class, 'Employer') or contains(@class, 'company')]").text
+                except NoSuchElementException:
+                    company_name = "Unknown"
+
+                # Location
+                try:
+                    location = card.find_element(By.XPATH, ".//div[contains(@class, 'location') or contains(@class, 'JobCard_location')]").text
+                except NoSuchElementException:
+                    location = "Unknown"
+
+                # Job description snippet
+                try:
+                    job_description = card.find_element(By.XPATH, ".//div[contains(@class, 'jobDescriptionSnippet') or contains(@class, 'JobCard_jobDescriptionSnippet')]").text
+                except NoSuchElementException:
+                    job_description = "No description available"
+
+                # Date posted (listing age)
+                try:
+                    listing_age = card.find_element(By.XPATH, ".//div[contains(@class, 'listingAge') or contains(@class, 'JobCard_listingAge')]").text
+                except NoSuchElementException:
+                    listing_age = "Not specified"
+
+                # Easy apply (if present)
+                try:
+                    easy_apply = card.find_element(By.XPATH, ".//span[contains(@class, 'easyApply') or contains(@class, 'JobCard_easyApply')]").text
+                except NoSuchElementException:
+                    easy_apply = "No"
+
+                jobs.append({
+                    "title": job_title,
+                    "company": company_name,
+                    "location": location,
+                    "description": job_description,
+                    "age": listing_age,
+                    "easy_apply": easy_apply
+                })
+
+                if len(jobs) >= num_jobs:
+                    break
+
+            except NoSuchElementException as e:
+                print(f"Element not found: {e}")
                 continue
 
-            try:
-                salary_estimate = job_card.find_element(By.CLASS_NAME, "JobCard_salaryEstimate__arV5J").text
-            except NoSuchElementException:
-                salary_estimate = None
-
-            try:
-                rating = job_card.find_element(By.CLASS_NAME, "EmployerProfile_ratingContainer__ul0Ef").text
-            except NoSuchElementException:
-                rating = None
-
-            # Printing for debugging
-            if verbose:
-                print(f"Job Title: {job_title}")
-                print(f"Salary Estimate: {salary_estimate}")
-                print(f"Job Description: {job_description[:500]}")
-                print(f"Rating: {rating}")
-                print(f"Company Name: {company_name}")
-                print(f"Location: {location}")
-
-            jobs.append({
-                "job_title": job_title,
-                "salary_estimate": salary_estimate,
-                "job_description": job_description,
-                "rating": rating,
-                "company_name": company_name,
-                "location": location
-            })
-
-        # Clicking on the "next page" button
         try:
-            driver.find_element(By.XPATH, './/li[@class="next"]//a').click()
+            # Click on the "Next" button to load more jobs
+            next_button = driver.find_element(By.XPATH, "//button[contains(@class, 'PaginationFooter_nextButton') or contains(@class, 'nextButton')]")
+            driver.execute_script("arguments[0].click();", next_button)
         except NoSuchElementException:
-            print(f"Scraping terminated before reaching target number of jobs. Needed {num_jobs}, got {len(jobs)}.")
+            print("No more pages available.")
             break
 
     driver.quit()
-    return jobs
+
+    
+    df = pd.DataFrame(jobs)
+
+    return df
 
 def insert_jobs_to_db(jobs):
     # Insert each job into the Django model
