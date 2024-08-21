@@ -5,6 +5,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies, including Chromium and ChromeDriver
+# Set the working directory
+WORKDIR /app
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
@@ -15,9 +17,6 @@ RUN apt-get update && apt-get install -y \
     chromium-driver \
     chromium
 
-# Set the working directory
-WORKDIR /app
-
 # Copy the requirements file and install Python dependencies
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
@@ -27,10 +26,11 @@ ENV CHROME_BIN=/usr/bin/chromium \
     CHROME_DRIVER=/usr/bin/chromedriver
 
 # Copy the entire project to the working directory
-COPY . /app/
+COPY ./scraperwebapp /app/
 
 # Expose port 8000 for the application
 EXPOSE 8000
 
 # Run migrations and then start the application using Gunicorn
 CMD ["sh", "-c", "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 scraperwebapp.wsgi:application"]
+

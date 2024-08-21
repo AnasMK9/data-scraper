@@ -22,7 +22,7 @@ class JobListing(models.Model):
 class Keyword(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     keyword = models.CharField(max_length=255)
-    scheduled_on = models.DateTimeField(auto_now_add=True)
+    scheduled_on = models.TimeField()
     job_listings = models.ManyToManyField('JobListing', related_name='keywords', blank=True)
 
     def __str__(self):

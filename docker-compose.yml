@@ -26,18 +26,31 @@ services:
     networks:
       - scraper_network
 
-  # notebook:
-  #   build: 
-  #     context: ./notebooks
-  #   ports:
-  #     - "8888:8888"
-  #   depends_on:
-  #     - postgres
-  #   env_file:
-  #     - ./notebooks/.env
-  #   networks:
-  #     - scraper_network
-  #   command: jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+
+  
+  celery:
+    build:
+      context: ./scraperwebapp
+    command: celery -A scraperwebapp.celery worker -l info
+    volumes:
+      - ./scraperwebapp:/app
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - scraper_network
+    env_file:
+      - ./scraperwebapp/.env
+
+
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - scraper_network
+
 
   
 networks:

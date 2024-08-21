@@ -12,17 +12,26 @@ class JobListingAdmin(admin.ModelAdmin):
 class KeywordAdmin(admin.ModelAdmin):
     list_display = ('keyword', 'user', 'scheduled_on')
     search_fields = ('keyword', 'user__username')
-    raw_id_fields = ('user', 'job_listings')
+    raw_id_fields = ('job_listings',)
 
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # editing an existing object
+            return ['user', 'job_listings']
+        return []
 
-# class KeywordInline(admin.TabularInline):
-#     model = Keyword
-#     extra = 1
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj)
+        if obj:
+            fields = ['keyword', 'scheduled_on']
+        return fields
 
+    def save_model(self, request, obj, form, change):
+        if not change:  # If creating a new object
+            obj.user = request.user  # Automatically set the current user
+        super().save_model(request, obj, form, change)
 
-# class UserAdmin(admin.ModelAdmin):
-#     inlines = [KeywordInline]
-
-
-# admin.site.unregister(User)
-# admin.site.register(User, UserAdmin)
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if not obj:
+            form.base_fields['user'].initial = request.user
+        return form

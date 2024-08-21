@@ -1,36 +1,40 @@
+import urllib.parse
+import urllib.request
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
 import pandas as pd
-
+from selenium.webdriver.chrome.options import Options
+import urllib
 from jobs.models import JobListing, Keyword
 
 def get_jobs(keyword, num_jobs, verbose):
     '''Gathers jobs as a dataframe, scraped from Glassdoor'''
 
     # Initializing the webdriver
-    options = webdriver.ChromeOptions()
-    options.add_argument('--headless')  #
-    options.add_argument('--no-sandbox')  
-    options.add_argument('--disable-dev-shm-usage')  
-    options.add_argument('--disable-gpu')  
-    options.add_argument('--window-size=1920x1080')  
-    options.binary_location = "/usr/bin/chromium"  
+    chrome_driver_path = "/usr/bin/chromedriver"
+    chrome_service = Service(executable_path=chrome_driver_path)
+    chrome_options = Options()
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
 
-    service = Service(executable_path='/usr/bin/chromedriver')
+    driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
 
-    driver = webdriver.Chrome(service=service, options=options)
     driver.set_window_size(1920, 1080)
 
-    url = f'https://www.glassdoor.com/Job/jobs.htm?sc.keyword="{keyword}"&sc.locationSeoString=Riyadh+%28Saudi+Arabia%29&locId=3110290&locT=C'
+    print (urllib.parse.urlencode(keyword));
+    print(keyword)
+    url = f'https://www.glassdoor.com/Job/jobs.htm?={urllib.parse.urlencode({"sc.keyword":keyword})}&sc.locationSeoString=Riyadh+%28Saudi+Arabia%29&locId=3110290&locT=C'
+    print(url)
     driver.get(url)
     jobs = []
 
     while len(jobs) < num_jobs:  # If true, should be still looking for new jobs.
 
-        time.sleep(4)  # Let the page load
+        time.sleep(1)  # Let the page load
 
         # Test for the "Sign Up" prompt and get rid of it.
         try:
